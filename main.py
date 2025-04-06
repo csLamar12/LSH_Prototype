@@ -48,7 +48,7 @@ def calculate_jaccard_index(*vectors):
         for j in range(len(vectors)-1):
             if i == j + 1:  # Skip same vector comparison
                 continue
-            print("Comparing: " + "v" + str(i+1) + " and v" + str(j+2))
+            # print("Comparing: " + "v" + str(i+1) + " and v" + str(j+2))
             for x in range(len(vectors[i])):
                 if vectors[i][x] == vectors[j+1][x] and vectors[i][x] == 1:
                     c11 += 1
@@ -63,7 +63,7 @@ def calculate_jaccard_index(*vectors):
         jaccard_index_list.append(round(x11/(x11+y01+z10),4))
     return jaccard_index_list
 
-def create_permutations(vocabulary, p=4):
+def create_permutations(vocabulary, p=100):
     numbers = list(vocabulary.keys())
     perm_list = []
     for i in range(p):
@@ -79,12 +79,12 @@ def create_signatures(permutations, vocabulary, *vectors):
 
     for i in range(len(permutations)):
         for j in range(len(vectors)):
-            print("Comparing: " + "p" + str(i+1) + " and v" + str(j+1))
+            # print("Comparing: " + "p" + str(i+1) + " and v" + str(j+1))
             for x in range(len(vectors[j])):
-                print("at " + str(vectors[j][p[i][x]]) + " x = " + str(x))
+                # print("at " + str(vectors[j][p[i][x]]) + " x = " + str(x))
                 if vectors[j][p[i][x]] == 1:
                     temp_signature.append(x)
-                    print("appended")
+                    # print("appended")
                     break
         signature.append(temp_signature[:])
         temp_signature.clear()
@@ -94,8 +94,8 @@ def create_signatures(permutations, vocabulary, *vectors):
 def get_vector_signatures(signature):
     sig = []
     temp_sig = []
-    print(len(signature[0]))
-    print(len(signature))
+    # print(len(signature[0]))
+    # print(len(signature))
     for j in range(len(signature[0])):
         for i in range(len(signature)):
             temp_sig.append(str(signature[i][j]))
@@ -103,28 +103,28 @@ def get_vector_signatures(signature):
         temp_sig.clear()
     return sig
 
+def signature_similarity(s1, s2):
+    identical_count = 0
+    for i in range(len(s1)):
+        if s1[i] == s2[i]:
+            identical_count += 1
+    return identical_count/len(s1)
 
 text1, text2, text3 = "bvxvmt", "brxvmt", "vvkxvb3"
 
 s1, s2, s3 = create_shingles(text1), create_shingles(text2), create_shingles(text3)
 
 vocab = create_vocabulary(s1, s2, s3)
-print("Vocabluary =", vocab)
 v1, v2, v3 = create_vector(vocab, s1), create_vector(vocab, s2), create_vector(vocab, s3)
-print("V1 =", v1)
-print("V2 =", v2)
-print("V3 =", v3)
 
 jaccard_index = calculate_jaccard_index(v1, v2, v3)
 
-print("Jaccard Index =", jaccard_index)
 permutations_list = create_permutations(vocab)
-print("Permutations =", permutations_list)
 signatures = create_signatures(permutations_list, vocab, v1,v2,v3)
-for sig in signatures:
-    print(sig)
 
 v_signatures = get_vector_signatures(signatures)
+print("Signatures:")
 for i in range(len(v_signatures)):
     print("".join(v_signatures[i]))
-print(v_signatures)
+print("Jaccard Index =", jaccard_index)
+print("Signature Similarity = ", signature_similarity(v_signatures[0], v_signatures[1]))
