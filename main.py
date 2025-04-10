@@ -1,5 +1,6 @@
 import random
-import time
+import tkinter as tk
+from tkinter import scrolledtext, messagebox, filedialog
 
 
 def create_shingles(text, k=2):
@@ -63,7 +64,7 @@ def calculate_jaccard_index(*vectors):
         jaccard_index_list.append(round(x11/(x11+y01+z10),4))
     return jaccard_index_list
 
-def create_permutations(vocabulary, p=100):
+def create_permutations(vocabulary, p=4):
     numbers = list(vocabulary.keys())
     perm_list = []
     for i in range(p):
@@ -110,21 +111,78 @@ def signature_similarity(s1, s2):
             identical_count += 1
     return identical_count/len(s1)
 
-text1, text2, text3 = "bvxvmt", "brxvmt", "vvkxvb3"
 
-s1, s2, s3 = create_shingles(text1), create_shingles(text2), create_shingles(text3)
+def load_text_from_file(text_area):
+    file_path = filedialog.askopenfilename(
+        title="Select Text File",
+        filetypes=(("Text files", "*.txt"), ("All files", "*.*"))
+    )
+    if file_path:
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                text_area.delete("1.0", tk.END)
+                text_area.insert(tk.END, file.read())
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open file:\n{e}")
 
-vocab = create_vocabulary(s1, s2, s3)
-v1, v2, v3 = create_vector(vocab, s1), create_vector(vocab, s2), create_vector(vocab, s3)
+def compare_texts():
+    text1 = text_area1.get("1.0", tk.END).strip()
+    text2 = text_area2.get("1.0", tk.END).strip()
 
-jaccard_index = calculate_jaccard_index(v1, v2, v3)
+    if not text1 or not text2:
+        messagebox.showerror("Error", "Please enter text in both text areas or load files.")
+        return
 
-permutations_list = create_permutations(vocab)
-signatures = create_signatures(permutations_list, vocab, v1,v2,v3)
+    shingles1 = create_shingles(text1)
+    shingles2 = create_shingles(text2)
+    vocabulary = create_vocabulary(shingles1, shingles2)
 
-v_signatures = get_vector_signatures(signatures)
-print("Signatures:")
-for i in range(len(v_signatures)):
-    print("".join(v_signatures[i]))
-print("Jaccard Index =", jaccard_index)
-print("Signature Similarity = ", signature_similarity(v_signatures[0], v_signatures[1]))
+    if not vocabulary:
+        result_text.delete("1.0", tk.END)
+        result_text.insert("1.0", "No common shingles found. Cannot calculate similarity.")
+        return
+
+    vector1 = create_vector(vocabulary, shingles1)
+    vector2 = create_vector(vocabulary, shingles2)
+    permutations_list = create_permutations(vocabulary)
+    signature1 = create_signatures(permutations_list, vocabulary, vector1)
+    signature2 = create_signatures(permutations_list, vocabulary, vector2)
+
+    j_index = calculate_jaccard_index(vector1, vector2)
+    sig_sim = signature_similarity(signature1, signature2)
+
+    result_text.delete("1.0", tk.END)
+    result_text.insert("1.0", f"Jaccard Index Similarity: {j_index}\n")
+    result_text.insert(tk.END, f"MinHash Signature Similarity: {sig_sim}\n")
+
+# GUI Setup
+window = tk.Tk()
+window.title("Text Similarity Checker")
+
+# Text Area 1
+label1 = tk.Label(window, text="Text 1:")
+label1.pack(pady=5)
+text_area1 = scrolledtext.ScrolledText(window, height=10, width=50)
+text_area1.pack(padx=10, pady=5)
+load_button1 = tk.Button(window, text="Load from File", command=lambda: load_text_from_file(text_area1))
+load_button1.pack(pady=2)
+
+# Text Area 2
+label2 = tk.Label(window, text="Text 2:")
+label2.pack(pady=5)
+text_area2 = scrolledtext.ScrolledText(window, height=10, width=50)
+text_area2.pack(padx=10, pady=5)
+load_button2 = tk.Button(window, text="Load from File", command=lambda: load_text_from_file(text_area2))
+load_button2.pack(pady=2)
+
+# Compare Button
+compare_button = tk.Button(window, text="Compare Texts", command=compare_texts)
+compare_button.pack(pady=10)
+
+# Result Area
+result_label = tk.Label(window, text="Similarity Results:")
+result_label.pack(pady=5)
+result_text = scrolledtext.ScrolledText(window, height=5, width=50)
+result_text.pack(padx=10, pady=5)
+
+window.mainloop()
