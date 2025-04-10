@@ -2,6 +2,11 @@ import random
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, filedialog
 
+# Citing: [1] url: [https://ajis.aaisnet.org/index.php/ajis/article/download/1538/817/5125](https://ajis.aaisnet.org/index.php/ajis/article/download/1538/817/5125)
+# This article discusses the Jaccard index's interpretability as a measure of overlap between sets.
+
+# Citing: [3] url: [https://pmc.ncbi.nlm.nih.gov/articles/PMC6720031/](https://pmc.ncbi.nlm.nih.gov/articles/PMC6720031/)
+# This article interprets MinHash similarity in the context of sequence comparison, where higher similarity suggests greater sequence relatedness.
 
 def create_shingles(text, k=2):
     # k variable represents our shingle size
@@ -126,6 +131,7 @@ def load_text_from_file(text_area):
             messagebox.showerror("Error", f"Could not open file:\n{e}")
 
 def compare_texts():
+    """Compares the texts in the two text areas using Jaccard Index and MinHash and interprets the results."""
     text1 = text_area1.get("1.0", tk.END).strip()
     text2 = text_area2.get("1.0", tk.END).strip()
 
@@ -148,12 +154,36 @@ def compare_texts():
     signature1 = create_signatures(permutations_list, vocabulary, vector1)
     signature2 = create_signatures(permutations_list, vocabulary, vector2)
 
-    j_index = calculate_jaccard_index(vector1, vector2)
+    j_index_list = calculate_jaccard_index(vector1, vector2)
     sig_sim = signature_similarity(signature1, signature2)
 
     result_text.delete("1.0", tk.END)
-    result_text.insert("1.0", f"Jaccard Index Similarity: {j_index}\n")
-    result_text.insert(tk.END, f"MinHash Signature Similarity: {sig_sim}\n")
+
+    if j_index_list:
+        j_index = j_index_list[0]
+        result_text.insert("1.0", f"Jaccard Index Similarity: {j_index}\n")
+        # Interpretation of Jaccard Index based on [1]
+        if j_index == 1.0:
+            result_text.insert(tk.END, "Interpretation (Jaccard): The texts are identical, sharing all shingles, indicating perfect overlap.\n")
+        elif j_index > 0.5:
+            result_text.insert(tk.END, "Interpretation (Jaccard): The texts show a high degree of similarity, suggesting a substantial overlap in their shingle content.\n")
+        elif j_index > 0.2:
+            result_text.insert(tk.END, "Interpretation (Jaccard): The texts have some similarity, indicating a moderate level of shared shingle content.\n")
+        else:
+            result_text.insert(tk.END, "Interpretation (Jaccard): The texts have low similarity, suggesting minimal overlap in their shingle content.\n")
+    else:
+        result_text.insert("1.0", "Could not calculate Jaccard Index.\n")
+
+    result_text.insert(tk.END, f"\nMinHash Signature Similarity: {sig_sim}\n")
+    # Interpretation of MinHash Signature Similarity based on [3] (in the context of sequence comparison - here, shingle sequences)
+    if sig_sim == 1.0:
+        result_text.insert(tk.END, "Interpretation (MinHash): The MinHash signatures are identical, strongly suggesting a very high similarity in the underlying shingle sets.\n")
+    elif sig_sim > 0.7:
+        result_text.insert(tk.END, "Interpretation (MinHash): The MinHash signatures show high similarity, indicating a likely significant relatedness in the shingle content of the texts.\n")
+    elif sig_sim > 0.4:
+        result_text.insert(tk.END, "Interpretation (MinHash): The MinHash signatures show moderate similarity, suggesting some level of relatedness in the texts' shingle content.\n")
+    else:
+        result_text.insert(tk.END, "Interpretation (MinHash): The MinHash signatures show low similarity, indicating a low likelihood of significant relatedness in the texts' shingle content.\n")
 
 # GUI Setup
 window = tk.Tk()
@@ -182,7 +212,7 @@ compare_button.pack(pady=10)
 # Result Area
 result_label = tk.Label(window, text="Similarity Results:")
 result_label.pack(pady=5)
-result_text = scrolledtext.ScrolledText(window, height=5, width=50)
+result_text = scrolledtext.ScrolledText(window, height=10, width=50) # Increased height for interpretations
 result_text.pack(padx=10, pady=5)
 
 window.mainloop()
